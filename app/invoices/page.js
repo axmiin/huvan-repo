@@ -28,6 +28,13 @@ const docTotal = (s) => ((s?.data || s)?.items || []).reduce((t, it) => t + num(
 const docStatus = (s) => ((s?.data || s)?.status === 'paid' ? 'paid' : 'open');
 
 // ── small UI pieces ───────────────────────────────────────
+const EyeIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
 const Inp = ({ style: s, ...p }) => (
   <input
     style={{
@@ -441,22 +448,6 @@ export default function Invoices() {
     load();
   };
 
-  const toggleRowStatus = async (s, e) => {
-    e.stopPropagation();
-    const nextStatus = docStatus(s) === 'paid' ? 'open' : 'paid';
-    const base = s.data || {};
-    const updatedData = {
-      ...base,
-      no: s.no || base.no,
-      type: s.type || base.type || 'invoice',
-      status: nextStatus,
-    };
-    const r = await sb.from('invoices').update({ data: updatedData }).eq('id', s.id);
-    if (r.error) return setErr(r.error.message);
-    if (doc?.id === s.id) setDoc((d) => ({ ...d, status: nextStatus }));
-    load();
-  };
-
   const openDoc = (s, openPreview = false) => {
     const d = s.data || s;
     setDoc({
@@ -488,7 +479,7 @@ export default function Invoices() {
     load();
   };
 
-  const newDoc = (type) => {
+  const newDoc = (type = 'invoice') => {
     setDoc(blankDoc(type, saved));
     setErr('');
     setDirty(false);
@@ -612,7 +603,7 @@ export default function Invoices() {
         .inv-header {
           display: flex;
           justify-content: space-between;
-          align-items: flex-end;
+          align-items: center;
           gap: 12px;
           flex-wrap: wrap;
           margin-bottom: 14px;
@@ -701,6 +692,22 @@ export default function Invoices() {
           background: var(--bg);
         }
 
+        .inv-icon-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 4px;
+          border-radius: 6px;
+          color: var(--muted);
+          cursor: pointer;
+          text-decoration: none;
+        }
+
+        .inv-icon-btn:hover {
+          color: var(--ink);
+          background: var(--panel);
+        }
+
         @media (max-width: 840px) {
           .invoice-layout,
           .invoice-layout.is-expanded {
@@ -728,7 +735,7 @@ export default function Invoices() {
         }
       `}</style>
 
-      {/* ── top header ── */}
+      {/* ── top header (single primary action) ── */}
       <div className="inv-header">
         <div>
           <h1 style={{ margin: 0 }}>Invoices &amp; Quotations</h1>
@@ -736,10 +743,7 @@ export default function Invoices() {
             Manage documents and export A4 PDFs
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Btn alt onClick={() => newDoc('quotation')}>+ New Quotation</Btn>
-          <Btn onClick={() => newDoc('invoice')}>+ New Invoice</Btn>
-        </div>
+        <Btn onClick={() => newDoc('invoice')}>+ New Document</Btn>
       </div>
 
       {/* ── summary strip: Outstanding & Collected ── */}
@@ -770,7 +774,7 @@ export default function Invoices() {
       </div>
 
       <div className={`invoice-layout ${editorOpen ? 'is-expanded' : ''}`}>
-        {/* ── expandable editor card (hidden on initial load) ── */}
+        {/* ── expandable editor card ── */}
         {editorOpen && (
           <div className="card invoice-form-card">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -927,13 +931,13 @@ export default function Invoices() {
           </div>
         )}
 
-        {/* ── saved documents register (primary focus on open) ── */}
+        {/* ── saved documents register ── */}
         <div className="card invoice-saved-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
             <div>
               <h2 style={{ margin: 0 }}>Saved documents</h2>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-                Click a row to edit · Toggle status pill for Paid / Open
+                Click any row to edit · Open editor to change status
               </div>
             </div>
 
@@ -1014,17 +1018,11 @@ export default function Invoices() {
                           {(s.data || {}).cust || ''}
                         </td>
                         <td style={{ whiteSpace: 'nowrap' }}>
-                          <button
-                            type="button"
-                            onClick={(e) => toggleRowStatus(s, e)}
-                            title="Click to toggle Open / Paid"
+                          <span
                             style={{
-                              margin: 0,
+                              display: 'inline-block',
                               padding: '2px 8px',
                               borderRadius: 12,
-                              border: 'none',
-                              cursor: 'pointer',
-                              font: 'inherit',
                               fontSize: 11,
                               fontWeight: 600,
                               background: st === 'paid' ? 'rgba(39, 174, 96, 0.14)' : 'rgba(192, 57, 43, 0.12)',
@@ -1032,29 +1030,32 @@ export default function Invoices() {
                             }}
                           >
                             {st === 'paid' ? 'Paid' : 'Open'}
-                          </button>
+                          </span>
                         </td>
                         <td className="n" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
                           MVR {f(docTotal(s))}
                         </td>
                         <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
-                          <a
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDoc(s, true);
-                            }}
-                            title="Preview A4"
-                            style={{ cursor: 'pointer', color: 'var(--muted)', marginRight: 10, fontSize: 13 }}
-                          >
-                            👁
-                          </a>
-                          <a
-                            onClick={(e) => deleteDoc(s.id, e)}
-                            title="Delete"
-                            style={{ cursor: 'pointer', color: 'var(--muted)', fontSize: 15 }}
-                          >
-                            ×
-                          </a>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <a
+                              className="inv-icon-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDoc(s, true);
+                              }}
+                              title="Preview A4"
+                            >
+                              <EyeIcon />
+                            </a>
+                            <a
+                              className="inv-icon-btn"
+                              onClick={(e) => deleteDoc(s.id, e)}
+                              title="Delete"
+                              style={{ fontSize: 15, lineHeight: 1 }}
+                            >
+                              ×
+                            </a>
+                          </span>
                         </td>
                       </tr>
                     );
