@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { sb } from '../../lib/supabase';
 import { f, today } from '../../lib/util';
+import ReceiptScanner from '../../components/ReceiptScanner';
 
 const LOGO = '/logo.png';
 const STAMP = '/stamp.png';
@@ -420,6 +421,20 @@ export default function Invoices() {
   const delItem = (idx) => {
     const items = doc.items.filter((_, i) => i !== idx);
     setItems(items.length ? items : [{ d: '', q: 1, r: 0 }]);
+  };
+
+  const applyScannedReceipt = ({ items, date, customer }) => {
+    setDirty(true);
+    setErr('');
+    setDoc((d) => {
+      const existingNonEmpty = d.items.filter((it) => it.d.trim() || num(it.r) > 0);
+      return {
+        ...d,
+        date: date || d.date,
+        cust: d.cust.trim() ? d.cust : (customer || d.cust),
+        items: existingNonEmpty.length ? [...existingNonEmpty, ...items] : items,
+      };
+    });
   };
 
   const saveDoc = async () => {
@@ -870,8 +885,15 @@ export default function Invoices() {
               </Field>
             </div>
 
-            {/* line items */}
+            {/* line items + receipt scanner */}
             <div className="inv-items-box">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em', color: 'var(--muted)' }}>
+                  Line Items
+                </span>
+                <ReceiptScanner label="Scan Receipt" onParsed={applyScannedReceipt} />
+              </div>
+
               <div
                 className="invoice-items-row"
                 style={{
