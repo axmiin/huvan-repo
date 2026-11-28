@@ -11,6 +11,30 @@ const compareLatest = (a, b) => {
   return String(b.created_at || '').localeCompare(String(a.created_at || ''));
 };
 
+const fmtShortDate = (v) => {
+  const full = dmy(v);
+  if (!full) return '';
+  const parts = String(full).split('/');
+  if (parts.length === 3 && parts[2].length === 4) {
+    return `${parts[0]}/${parts[1]}/${parts[2].slice(-2)}`;
+  }
+  return full;
+};
+
+const modalInputStyle = {
+  width: '100%',
+  maxWidth: '100%',
+  boxSizing: 'border-box',
+  padding: '9px 11px',
+  border: '1px solid #cfc6be',
+  borderRadius: 10,
+  background: '#faf8f5',
+  color: '#1c1917',
+  font: 'inherit',
+  fontSize: 13,
+  marginBottom: 10,
+};
+
 const Modal = ({ title, onClose, children }) => (
   <div style={{ position:'fixed',inset:0,background:'rgba(0,0,0,0.45)',zIndex:50,display:'flex',alignItems:'flex-end',justifyContent:'center' }} onClick={(e)=>e.target===e.currentTarget&&onClose()}>
     <div style={{ background:'#f0ece8',borderRadius:'16px 16px 0 0',padding:20,width:'100%',maxWidth:440,paddingBottom:'calc(20px + env(safe-area-inset-bottom))',maxHeight:'90vh',overflowY:'auto' }}>
@@ -143,12 +167,87 @@ export default function EntryPage({ table, title, noun, cats: base, open, onClos
   });
 
   const isExpenses = table === 'expenses';
+  const badgeStyle = isExpenses
+    ? { background: 'rgba(192, 57, 43, 0.12)', color: '#c0392b' }
+    : { background: 'rgba(39, 174, 96, 0.14)', color: '#27ae60' };
 
-  return (<><h1>{title}</h1>
+  return (<>
+    <style>{`
+      .entry-reg-wrap {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      .entry-reg-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      .entry-reg-table th {
+        text-align: left;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: var(--muted);
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--line);
+        white-space: nowrap;
+      }
+
+      .entry-reg-table td {
+        padding: 10px 10px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: middle;
+      }
+
+      .entry-reg-row:hover {
+        background: var(--bg);
+      }
+
+      .entry-reg-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .entry-reg-del {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+        text-decoration: none;
+      }
+
+      .entry-reg-del:hover {
+        color: var(--ink);
+        background: var(--panel);
+      }
+
+      @media (max-width: 640px) {
+        .entry-reg-table th,
+        .entry-reg-table td {
+          padding: 9px 7px;
+          font-size: 12px;
+        }
+      }
+    `}</style>
+
+    <h1>{title}</h1>
     <div className="card" style={{ marginBottom:16 }}>
       <h2>{title} overview</h2>
       <label>Month (clear to show all)</label>
-      <input type="month" value={m} onChange={(e) => setM(e.target.value)} style={{width:'100%',maxWidth:'100%',boxSizing:'border-box'}} />
+      <input type="month" value={m} onChange={(e) => setM(e.target.value)} style={{ ...modalInputStyle, marginBottom:12 }} />
       <div className="sum">
         <div>Total<b>{f(total)}</b></div>
         <div>Entries<b>{list.length}</b></div>
@@ -169,20 +268,58 @@ export default function EntryPage({ table, title, noun, cats: base, open, onClos
       {!isOpen && err && <p className="err">{err}</p>}
     </div>
     <div className="card">
-      <h2>{title} list</h2>
-      <div className="xt" style={isExpenses ? { maxWidth: 380, width: '100%' } : undefined}>
-        <table style={isExpenses ? { maxWidth: 380 } : undefined}><thead><tr><th>Date</th><th>Details</th><th>Amount</th><th>Category</th><th>Account</th><th></th></tr></thead>
-        <tbody>{list.length ? list.map((x) => (<tr key={x.id}><td>{dmy(x.entry_date)}</td><td>{x.details}</td><td className="n">{f(x.a)}</td>
-          <td>{x.category}</td><td>{an(x.account_id)}</td><td><a onClick={() => del(x.id)}>×</a></td></tr>)) : <tr><td colSpan="6">No entries</td></tr>}</tbody></table>
+      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginBottom:10,flexWrap:'wrap' }}>
+        <h2 style={{ margin:0 }}>{title} list</h2>
+        <span style={{ fontSize:11,color:'var(--muted)' }}>{list.length} {list.length === 1 ? 'entry' : 'entries'}</span>
+      </div>
+      <div className="xt entry-reg-wrap" style={isExpenses ? { maxWidth: 380, width: '100%' } : undefined}>
+        <table className="entry-reg-table" style={isExpenses ? { maxWidth: 380 } : undefined}>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Details</th>
+              <th>Category</th>
+              <th>Account</th>
+              <th style={{ textAlign: 'right' }}>Amount</th>
+              <th style={{ width: 32 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {list.length ? list.map((x) => {
+              const acctName = an(x.account_id);
+              return (
+                <tr key={x.id} className="entry-reg-row">
+                  <td style={{ whiteSpace: 'nowrap', color: 'var(--muted)', fontWeight: 500 }}>{fmtShortDate(x.entry_date)}</td>
+                  <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>{x.details}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    {x.category && (
+                      <span className="entry-reg-badge" style={badgeStyle}>{x.category}</span>
+                    )}
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap', color: 'var(--muted)', fontSize: 12 }}>{acctName}</td>
+                  <td className="n" style={{ textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>MVR {f(x.a)}</td>
+                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <a className="entry-reg-del" title={'Delete ' + noun} onClick={() => del(x.id)}>×</a>
+                  </td>
+                </tr>
+              );
+            }) : <tr><td colSpan="6" style={{ textAlign: 'center', color: 'var(--muted)', padding: '20px 10px' }}>No entries</td></tr>}
+          </tbody>
+        </table>
       </div>
     </div>
     {isOpen && <Modal title={'Add ' + noun} onClose={close}><form onSubmit={add}>
-      <label>Date</label><input type="date" value={form.entry_date} onChange={set('entry_date')} style={{width:'100%',maxWidth:'100%',boxSizing:'border-box'}} />
-      <label>Details</label><input value={form.details} onChange={set('details')} />
-      <label>Category</label><input list={table + '-cats'} value={form.category} onChange={set('category')} />
+      <label style={{ display:'block',fontSize:11,fontWeight:600,color:'var(--muted)',marginBottom:4 }}>Date</label>
+      <input type="date" value={form.entry_date} onChange={set('entry_date')} style={modalInputStyle} />
+      <label style={{ display:'block',fontSize:11,fontWeight:600,color:'var(--muted)',marginBottom:4 }}>Details</label>
+      <input value={form.details} onChange={set('details')} style={modalInputStyle} />
+      <label style={{ display:'block',fontSize:11,fontWeight:600,color:'var(--muted)',marginBottom:4 }}>Category</label>
+      <input list={table + '-cats'} value={form.category} onChange={set('category')} style={modalInputStyle} />
       <datalist id={table + '-cats'}>{cats.map((c) => <option key={c} value={c} />)}</datalist>
-      <label>Account</label><select value={form.account_id} onChange={set('account_id')}>{accts.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
-      <label>Amount</label><input type="number" step="0.01" min="0" value={form.amount} onChange={set('amount')} />
+      <label style={{ display:'block',fontSize:11,fontWeight:600,color:'var(--muted)',marginBottom:4 }}>Account</label>
+      <select value={form.account_id} onChange={set('account_id')} style={modalInputStyle}>{accts.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+      <label style={{ display:'block',fontSize:11,fontWeight:600,color:'var(--muted)',marginBottom:4 }}>Amount</label>
+      <input type="number" step="0.01" min="0" value={form.amount} onChange={set('amount')} style={modalInputStyle} />
       <button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Add'}</button><p className="err">{err}</p>
     </form></Modal>}
   </>);
