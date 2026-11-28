@@ -27,6 +27,18 @@ const nextNo = (saved, type) => {
 const docTotal = (s) => ((s?.data || s)?.items || []).reduce((t, it) => t + num(it.q) * num(it.r), 0);
 const docStatus = (s) => ((s?.data || s)?.status === 'paid' ? 'paid' : 'open');
 
+const inputFieldStyle = {
+  width: '100%',
+  padding: '9px 11px',
+  border: '1px solid #cfc6be',
+  borderRadius: 10,
+  background: '#faf8f5',
+  color: '#1c1917',
+  font: 'inherit',
+  fontSize: 13,
+  boxSizing: 'border-box',
+};
+
 // ── small UI pieces ───────────────────────────────────────
 const EyeIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -38,15 +50,7 @@ const EyeIcon = () => (
 const Inp = ({ style: s, ...p }) => (
   <input
     style={{
-      width: '100%',
-      padding: '9px 11px',
-      border: '1px solid var(--line)',
-      borderRadius: 10,
-      background: 'var(--bg)',
-      color: 'var(--ink)',
-      font: 'inherit',
-      fontSize: 13,
-      boxSizing: 'border-box',
+      ...inputFieldStyle,
       ...s,
     }}
     {...p}
@@ -137,9 +141,9 @@ const Modal = ({ title, subtitle, onClose, children, wide }) => (
             width: 30,
             height: 30,
             borderRadius: 8,
-            background: 'var(--bg)',
-            border: '1px solid var(--line)',
-            color: 'var(--muted)',
+            background: '#faf8f5',
+            border: '1px solid #cfc6be',
+            color: '#57534e',
             cursor: 'pointer',
             fontSize: 15,
             lineHeight: 1,
@@ -338,11 +342,11 @@ function ItemRow({ item, idx, onChange, onDelete }) {
             margin: 0,
             padding: 0,
             height: 36,
-            background: 'transparent',
-            border: '1px solid var(--line)',
+            background: '#faf8f5',
+            border: '1px solid #cfc6be',
             borderRadius: 9,
             cursor: 'pointer',
-            color: 'var(--muted)',
+            color: '#57534e',
             fontSize: 15,
           }}
         >
@@ -601,12 +605,7 @@ export default function Invoices() {
 
       <style>{`
         .inv-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-          margin-bottom: 14px;
+          margin-bottom: 12px;
         }
 
         .inv-stats {
@@ -620,11 +619,19 @@ export default function Invoices() {
           background: var(--panel);
           border: 1px solid var(--line);
           border-radius: 14px;
-          padding: 12px 14px;
+          padding: 11px 13px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
+          min-width: 0;
+        }
+
+        .inv-stat-val {
+          font-size: 16px;
+          font-weight: 700;
+          margin-top: 2px;
+          white-space: nowrap;
         }
 
         .invoice-layout {
@@ -643,8 +650,8 @@ export default function Invoices() {
           grid-template-columns: 1fr 1fr;
           gap: 4px;
           padding: 4px;
-          background: var(--bg);
-          border: 1px solid var(--line);
+          background: #faf8f5;
+          border: 1px solid #cfc6be;
           border-radius: 11px;
           margin-bottom: 14px;
         }
@@ -661,8 +668,8 @@ export default function Invoices() {
         }
 
         .inv-items-box {
-          background: var(--bg);
-          border: 1px solid var(--line);
+          background: #fdfcfa;
+          border: 1px solid #ded7cf;
           border-radius: 12px;
           padding: 10px;
           margin-top: 12px;
@@ -715,7 +722,15 @@ export default function Invoices() {
           }
 
           .inv-stats {
-            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 8px;
+          }
+
+          .inv-stat-pill {
+            padding: 10px 11px;
+          }
+
+          .inv-stat-val {
+            font-size: 14px;
           }
 
           .invoice-form-card,
@@ -735,39 +750,33 @@ export default function Invoices() {
         }
       `}</style>
 
-      {/* ── top header (single primary action) ── */}
+      {/* ── clean page title ── */}
       <div className="inv-header">
-        <div>
-          <h1 style={{ margin: 0 }}>Invoices &amp; Quotations</h1>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-            Manage documents and export A4 PDFs
-          </div>
-        </div>
-        <Btn onClick={() => newDoc('invoice')}>+ New Document</Btn>
+        <h1 style={{ margin: 0 }}>Invoices &amp; Quotations</h1>
       </div>
 
-      {/* ── summary strip: Outstanding & Collected ── */}
+      {/* ── level 2-col summary strip: Outstanding & Collected ── */}
       <div className="inv-stats">
         <div className="inv-stat-pill">
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>
               Outstanding ({stats.openCount})
             </div>
-            <div style={{ fontSize: 17, fontWeight: 700, marginTop: 2 }}>MVR {f(stats.outstanding)}</div>
+            <div className="inv-stat-val">MVR {f(stats.outstanding)}</div>
           </div>
-          <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20, background: 'rgba(192, 57, 43, 0.12)', color: '#c0392b' }}>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: 'rgba(192, 57, 43, 0.12)', color: '#c0392b', flexShrink: 0 }}>
             Open
           </span>
         </div>
 
         <div className="inv-stat-pill">
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>
               Collected
             </div>
-            <div style={{ fontSize: 17, fontWeight: 700, marginTop: 2 }}>MVR {f(stats.collected)}</div>
+            <div className="inv-stat-val">MVR {f(stats.collected)}</div>
           </div>
-          <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20, background: 'rgba(39, 174, 96, 0.14)', color: '#27ae60' }}>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: 'rgba(39, 174, 96, 0.14)', color: '#27ae60', flexShrink: 0 }}>
             Paid
           </span>
         </div>
@@ -788,9 +797,9 @@ export default function Invoices() {
                     fontWeight: 600,
                     padding: '2px 8px',
                     borderRadius: 20,
-                    background: doc.id && !dirty ? 'rgba(39, 174, 96, 0.14)' : 'var(--bg)',
-                    color: doc.id && !dirty ? '#27ae60' : 'var(--muted)',
-                    border: '1px solid var(--line)',
+                    background: doc.id && !dirty ? 'rgba(39, 174, 96, 0.14)' : '#faf8f5',
+                    color: doc.id && !dirty ? '#27ae60' : '#57534e',
+                    border: '1px solid #cfc6be',
                   }}
                 >
                   {doc.id ? (dirty ? 'Unsaved' : 'Saved') : 'Draft'}
@@ -803,9 +812,9 @@ export default function Invoices() {
                   margin: 0,
                   padding: '4px 9px',
                   borderRadius: 8,
-                  border: '1px solid var(--line)',
-                  background: 'var(--bg)',
-                  color: 'var(--muted)',
+                  border: '1px solid #cfc6be',
+                  background: '#faf8f5',
+                  color: '#57534e',
                   font: 'inherit',
                   fontSize: 11,
                   fontWeight: 600,
@@ -827,7 +836,7 @@ export default function Invoices() {
                     onClick={() => switchDocType(t)}
                     style={{
                       background: active ? 'var(--accent)' : 'transparent',
-                      color: active ? 'var(--on)' : 'var(--muted)',
+                      color: active ? 'var(--on)' : '#57534e',
                     }}
                   >
                     {typeLabel(t)}
@@ -853,16 +862,7 @@ export default function Invoices() {
                 <select
                   value={doc.status || 'open'}
                   onChange={setField('status')}
-                  style={{
-                    width: '100%',
-                    padding: '9px 10px',
-                    border: '1px solid var(--line)',
-                    borderRadius: 10,
-                    background: 'var(--bg)',
-                    color: 'var(--ink)',
-                    font: 'inherit',
-                    fontSize: 13,
-                  }}
+                  style={inputFieldStyle}
                 >
                   <option value="open">Open</option>
                   <option value="paid">Paid</option>
@@ -896,7 +896,7 @@ export default function Invoices() {
                 <ItemRow key={i} item={it} idx={i} onChange={changeItem} onDelete={delItem} />
               ))}
 
-              <Btn alt onClick={addItem} style={{ width: '100%', fontSize: 12, padding: '7px 12px', background: 'var(--panel)' }}>
+              <Btn alt onClick={addItem} style={{ width: '100%', fontSize: 12, padding: '7px 12px', background: '#faf8f5', borderColor: '#cfc6be', color: '#1c1917' }}>
                 + Add line item
               </Btn>
             </div>
@@ -904,8 +904,8 @@ export default function Invoices() {
             {/* total bar */}
             <div
               style={{
-                background: 'var(--bg)',
-                border: '1px solid var(--line)',
+                background: '#faf8f5',
+                border: '1px solid #cfc6be',
                 borderRadius: 11,
                 padding: '11px 13px',
                 marginTop: 12,
@@ -914,8 +914,8 @@ export default function Invoices() {
                 alignItems: 'center',
               }}
             >
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)' }}>Total Amount</span>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>MVR {f(currentTotal)}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#57534e' }}>Total Amount</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#1c1917' }}>MVR {f(currentTotal)}</span>
             </div>
 
             {err && <p className="err" style={{ marginTop: 8 }}>{err}</p>}
@@ -934,11 +934,11 @@ export default function Invoices() {
         {/* ── saved documents register ── */}
         <div className="card invoice-saved-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-            <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <h2 style={{ margin: 0 }}>Saved documents</h2>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-                Click any row to edit · Open editor to change status
-              </div>
+              <Btn onClick={() => newDoc('invoice')} style={{ padding: '6px 12px', fontSize: 12 }}>
+                + New Document
+              </Btn>
             </div>
 
             <div style={{ display: 'flex', gap: 6 }}>
